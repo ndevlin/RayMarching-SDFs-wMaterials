@@ -10,7 +10,7 @@ out vec4 out_Col;
 
 const int MAX_RAY_STEPS = 128;
 const float FOV = 45.0;
-const float EPSILON = 1e-6;
+const float EPSILON = 1e-4;
 
 const float PI = 3.14159265359;
 
@@ -418,14 +418,14 @@ vec3 getSceneColor(vec2 uv)
 
     if (intersection.distance_t > 0.0)
     { 
-        //return intersection.normal;//vec3(1.0);
+        //return intersection.normal;
 
         // Material base color
-        vec3 diffuseColor = vec3(0.7, 0.9, 0.3);
+        vec3 diffuseColor = vec3(1.0, 0.4, 0.4);
 
         // Lambert shading
         // Calculate the diffuse term
-        float diffuseTerm = dot(normalize(intersection.normal), normalize(LIGHT_DIR));
+        float diffuseTerm = dot(intersection.normal, normalize(LIGHT_DIR));
         
         diffuseTerm = clamp(diffuseTerm, 0.0f, 1.0f);
 
@@ -435,7 +435,7 @@ vec3 getSceneColor(vec2 uv)
         vec3 lambertColor = diffuseColor * lightIntensity;
 
         // Compute shadow
-        float shadowFactor = hardShadow(intersection.position, normalize(LIGHT_DIR), EPSILON * 100.0, 10.0);
+        float shadowFactor = softShadow(intersection.position, normalize(LIGHT_DIR), EPSILON * 1000.0, 100.0, 20.0);
         
         vec3 colorMinusShadowing = (shadowFactor + AMBIENT) * lambertColor;
 
