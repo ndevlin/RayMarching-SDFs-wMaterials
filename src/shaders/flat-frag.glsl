@@ -16,14 +16,22 @@ const float PI = 3.14159265359;
 
 const float FAR_CLIP = 1e10;
 
-const float AMBIENT = 0.2;
+const float AMBIENT = 0.05;
 
 const vec3 EYE = vec3(0.0, 0.0, -10.0);
 const vec3 ORIGIN = vec3(0.0, 0.0, 0.0);
 const vec3 WORLD_UP = vec3(0.0, 1.0, 0.0);
 const vec3 WORLD_RIGHT = vec3(1.0, 0.0, 0.0);
 const vec3 WORLD_FORWARD = vec3(0.0, 0.0, 1.0);
-const vec3 LIGHT_DIR = vec3(-1.0, 1.0, 2.0);
+
+
+const vec3 LIGHT1_DIR = vec3(-1.0, 1.0, 2.0);
+float light1_OutputIntensity = 1.0;
+vec3 light1_Color = vec3(1.0, 1.0, 1.0); // Full Daylight
+
+const vec3 LIGHT2_DIR = vec3(1.0, 0.0, 0.0);
+float light2_OutputIntensity = 0.5;
+vec3 light2_Color = vec3(0.996, 0.879, 0.804); // 5000 Kelvin Tungsten light
 
 
 struct Ray 
@@ -465,38 +473,62 @@ vec3 getSceneColor(vec2 uv)
         if(intersection.material_id == 3)
         {
             diffuseColor = vec3(0.9, 0.9, 0.9);
+            blinnPhong = true;
         }
 
-        // Lambert shading
-        // Calculate the diffuse term
-        float diffuseTerm = dot(intersection.normal, normalize(LIGHT_DIR));
+
+        // First Light
+
+        float diffuse1Term = dot(intersection.normal, normalize(LIGHT1_DIR));
         
-        diffuseTerm = clamp(diffuseTerm, 0.0f, 1.0f);
+        diffuse1Term = clamp(diffuse1Term, 0.0f, 1.0f);
 
-        float lightIntensity = diffuseTerm;  
-
+        float light1Intensity = diffuse1Term * light1_OutputIntensity;  
         
         if(blinnPhong)
         {
             vec3 viewVec = u_Eye - intersection.position;
-            vec3 posToLight = LIGHT_DIR - intersection.position;
+            vec3 posToLight = LIGHT1_DIR - intersection.position;
             vec3 H = (viewVec + posToLight) / (length(viewVec) + length(posToLight));
-            float intensity = 10.0f;
-            float sharpness = 50.0f;
+            float intensity = 1.0f;
+            float sharpness = 5.0f;
             float specularIntensity = intensity * max(pow(dot(H, intersection.normal), sharpness), 0.0f);
-            lightIntensity += specularIntensity;
-
+            light1Intensity += specularIntensity * light1_OutputIntensity;
         }
 
-        // Compute final color
-        vec3 finalColor = diffuseColor * lightIntensity;
+        // Second Light
 
-        // Compute shadow
-        float shadowFactor = softShadow(intersection.position, normalize(LIGHT_DIR), EPSILON * 1000.0, 100.0, 20.0);
+        float diffuse2Term = dot(intersection.normal, normalize(LIGHT2_DIR));
         
-        vec3 colorMinusShadowing = (shadowFactor + AMBIENT) * finalColor;
+        diffuse2Term = clamp(diffuse2Term, 0.0f, 1.0f);
 
-        return colorMinusShadowing;
+        float light2Intensity = diffuse2Term * light2_OutputIntensity;  
+        
+        if(blinnPhong)
+        {
+            vec3 viewVec = u_Eye - intersection.position;
+            vec3 posToLight = LIGHT2_DIR - intersection.position;
+            vec3 H = (viewVec + posToLight) / (length(viewVec) + length(posToLight));
+            float intensity = 1.0f;
+            float sharpness = 5.0f;
+            float specularIntensity = intensity * max(pow(dot(H, intersection.normal), sharpness), 0.0f);            
+            light2Intensity += specularIntensity * light2_OutputIntensity;
+        }
+
+
+        // Compute shadow from light1
+        float shadowFactor = softShadow(intersection.position, normalize(LIGHT1_DIR), EPSILON * 1000.0, 100.0, 20.0);
+        light1Intensity *= shadowFactor;
+
+        light1_Color *= light1Intensity;
+
+        light2_Color *= light2Intensity;
+
+        // Combine different lights
+        vec3 finalColor = diffuseColor * (light1_Color + light2_Color);
+        finalColor = finalColor * (1.0 + AMBIENT);
+
+        return finalColor;
 
     }
     return vec3(0.0);
