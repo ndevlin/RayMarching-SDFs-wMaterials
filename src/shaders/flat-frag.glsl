@@ -9,21 +9,14 @@ in vec2 fs_Pos;
 out vec4 out_Col;
 
 const int MAX_RAY_STEPS = 128;
+const float maxRayDistance = 20.0;
+
 const float FOV = 45.0;
 const float EPSILON = 1e-4;
 
 const float PI = 3.14159265359;
 
-const float FAR_CLIP = 1e10;
-
 const float AMBIENT = 0.05;
-
-const vec3 EYE = vec3(0.0, 0.0, -10.0);
-const vec3 ORIGIN = vec3(0.0, 0.0, 0.0);
-const vec3 WORLD_UP = vec3(0.0, 1.0, 0.0);
-const vec3 WORLD_RIGHT = vec3(1.0, 0.0, 0.0);
-const vec3 WORLD_FORWARD = vec3(0.0, 0.0, 1.0);
-
 
 const vec3 LIGHT1_DIR = vec3(-1.0, 1.0, 2.0);
 float light1_OutputIntensity = 0.9;
@@ -429,7 +422,7 @@ Intersection getRaymarchedIntersection(vec2 uv)
     float distancet = 0.0f;
     
     Ray r = getRay(uv);
-    for(int step; step < MAX_RAY_STEPS; ++step)
+    for(int step; step < MAX_RAY_STEPS && distancet < maxRayDistance; ++step)
     {
         
         vec3 queryPoint = r.origin + r.direction * distancet;
