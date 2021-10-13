@@ -30,9 +30,12 @@ float light1_OutputIntensity = 1.0;
 vec3 light1_Color = vec3(1.0, 1.0, 1.0); // Full Daylight
 
 const vec3 LIGHT2_DIR = vec3(1.0, 0.0, 0.0);
-float light2_OutputIntensity = 0.5;
+float light2_OutputIntensity = 0.3;
 vec3 light2_Color = vec3(0.996, 0.879, 0.804); // 5000 Kelvin Tungsten light
 
+const vec3 LIGHT3_DIR = vec3(-1.0, 1.0, -2.0);
+float light3_OutputIntensity = 0.8;
+vec3 light3_Color = vec3(0.996, 0.879, 0.804); // 5000 Kelvin Tungsten light
 
 struct Ray 
 {
@@ -516,6 +519,25 @@ vec3 getSceneColor(vec2 uv)
         }
 
 
+        // Third Light
+
+        float diffuse3Term = dot(intersection.normal, normalize(LIGHT3_DIR));
+        
+        diffuse3Term = clamp(diffuse3Term, 0.0f, 1.0f);
+
+        float light3Intensity = diffuse3Term * light3_OutputIntensity;  
+        
+        if(blinnPhong)
+        {
+            vec3 viewVec = u_Eye - intersection.position;
+            vec3 posToLight = LIGHT3_DIR - intersection.position;
+            vec3 H = (viewVec + posToLight) / (length(viewVec) + length(posToLight));
+            float intensity = 1.0f;
+            float sharpness = 5.0f;
+            float specularIntensity = intensity * max(pow(dot(H, intersection.normal), sharpness), 0.0f);            
+            light3Intensity += specularIntensity * light3_OutputIntensity;
+        }
+
         // Compute shadow from light1
         float shadowFactor = softShadow(intersection.position, normalize(LIGHT1_DIR), EPSILON * 1000.0, 100.0, 20.0);
         light1Intensity *= shadowFactor;
@@ -524,8 +546,10 @@ vec3 getSceneColor(vec2 uv)
 
         light2_Color *= light2Intensity;
 
+        light3_Color *= light3Intensity;
+
         // Combine different lights
-        vec3 finalColor = diffuseColor * (light1_Color + light2_Color);
+        vec3 finalColor = diffuseColor * (light1_Color + light2_Color + light3_Color);
         finalColor = finalColor * (1.0 + AMBIENT);
 
         return finalColor;
