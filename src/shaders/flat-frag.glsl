@@ -209,6 +209,15 @@ vec2 sceneSDF(vec3 queryPos)
         vec2 head = vec2(sdfSphere(queryPos, vec3(0.0, 1.3, 0.3), 0.6), matID);
         closestPointDistance = unionSDF(head, closestPointDistance);
 
+        // Add neck
+        matID = 1.0;
+        vec2 neck = vec2(sdfCapsule(queryPos - vec3(0.0, 0.3, 0.3), 
+                                                    vec3(-0.0, 0.1, -0.2), 
+                                                    vec3(0.0, 0.4, -0.1), 0.1), matID);
+        closestPointDistance = unionSDF(neck, closestPointDistance);
+
+
+
         // Add face
         matID = 1.0;
         vec3 shiftedFace = queryPos - vec3(-0.13, 1.3, 0.6);
@@ -334,6 +343,9 @@ vec2 sceneSDF(vec3 queryPos)
 
         vec2 ballJoint6 = vec2(sdfSphere(queryPos, vec3(-1.3, -0.05, -0.3), 0.15), matID);
         closestPointDistance = unionSDF(ballJoint6, closestPointDistance);
+
+        vec2 ballJoint7 = vec2(sdfSphere(queryPos, vec3(0.0, 0.53, 0.15), 0.15), matID);
+        closestPointDistance = unionSDF(ballJoint7, closestPointDistance);
     }
 
     return closestPointDistance;
