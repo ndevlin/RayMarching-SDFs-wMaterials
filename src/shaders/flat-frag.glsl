@@ -86,10 +86,18 @@ vec3 rotateXYZ(vec3 point, float thetaX, float thetaY, float thetaZ)
     return point;
 }
 
-
-float unionSDF(float distance1, float distance2)
+// Each vec represents an object, e.g. sphere vs plane;
+// First component is distance of that object, second is its materialID
+vec2 unionSDF(vec2 object1, vec2 object2)
 {
-    return min(distance1, distance2);
+    if(object2.x < object1.x)
+    {
+        return vec2(object2.x, object2.y);
+    }
+    else
+    {
+        return vec2(object1.x, object1.y);
+    }
 }
 
 float smoothSubtraction( float d1, float d2, float k ) 
@@ -165,85 +173,100 @@ float sdfTorus( vec3 point, float radius, float thickness)
 
 
 // Describe the scene using sdf functions
-float sceneSDF(vec3 queryPos) 
+vec2 sceneSDF(vec3 queryPos) 
 {
-    float closestPointDistance = 1e10;
+    // First val is distance from camera, second is materialID; later will be changed to int
+    float matID = 0.0;
+    vec2 closestPointDistance = vec2(1e10, matID);
 
     // Add floor
-    closestPointDistance = unionSDF(heightField(queryPos, -2.0), closestPointDistance);
+    matID = 0.0;
+    vec2 floor = vec2(heightField(queryPos, -2.0), matID);
+    closestPointDistance = unionSDF(floor, closestPointDistance);
 
     // Bounding box to improve performance
-    if(sdfBox(queryPos, vec3(5.0, 5.0, 5.0) ) < closestPointDistance)
+    if(sdfBox(queryPos, vec3(5.0, 5.0, 5.0) ) < closestPointDistance.x)
     {
         // Add body
         vec3 bodyPos = rotateXYZ(queryPos, PI / 10.0,  PI / 4.0, 0.0);
-        float cube = sdfBox(bodyPos, vec3(0.5, 0.5, 0.5));
+        matID = 1.0;
+        vec2 cube = vec2(sdfBox(bodyPos, vec3(0.5, 0.5, 0.5)), matID);
         closestPointDistance = unionSDF(cube, closestPointDistance);
         
         // Add head
-        closestPointDistance = unionSDF(sdfSphere(queryPos, vec3(0.0, 1.3, 0.3), 0.6), closestPointDistance);
+        matID = 1.0;
+        vec2 head = vec2(sdfSphere(queryPos, vec3(0.0, 1.3, 0.3), 0.6), matID);
+        closestPointDistance = unionSDF(head, closestPointDistance);
 
         // Add face
+        matID = 1.0;
         vec3 shiftedFace = queryPos - vec3(-0.13, 1.3, 0.6);
         shiftedFace = rotateAboutX(shiftedFace, PI / 2.0);
         // Make robot abruptly turn head to look at camera
         shiftedFace = rotateAboutZ(shiftedFace, PI / 5.0 - quaImpulse(2.0, clamp(sin(u_Time * 0.05), 0.0, 1.0)) / 2.0);
 
-
-        float scubaMask = sdfRoundedCylinder(shiftedFace, 0.2, 0.1, 0.2);
+        vec2 scubaMask = vec2(sdfRoundedCylinder(shiftedFace, 0.2, 0.1, 0.2), matID);
         float negMask = sdfRoundedCylinder(shiftedFace, 0.15, 0.05, 0.5);
-        scubaMask = smoothSubtraction(negMask, scubaMask, 0.0);
+        scubaMask = vec2(smoothSubtraction(negMask, scubaMask.x, 0.0), matID);
 
         closestPointDistance = unionSDF(scubaMask, closestPointDistance);
 
         // Add right upper arm
-        closestPointDistance = unionSDF(sdfCapsule(queryPos - vec3(-0.8, -0.4, -0.4), 
+        matID = 1.0;
+        vec2 rightUpperArm = vec2(sdfCapsule(queryPos - vec3(-0.8, -0.4, -0.4), 
                                                     vec3(-0.6, 0.3, 0.1), 
-                                                    vec3(0.2, 0.8, 0.2), 0.1), 
-                                                    closestPointDistance);
+                                                    vec3(0.2, 0.8, 0.2), 0.1), matID);
+        closestPointDistance = unionSDF(rightUpperArm, closestPointDistance);
 
         // Add right lower arm
-        closestPointDistance = unionSDF(sdfCapsule(queryPos - vec3(-0.8, -0.4, -0.4), 
+        matID = 1.0;
+        vec2 rightLowerArm = vec2(sdfCapsule(queryPos - vec3(-0.8, -0.4, -0.4), 
                                                     vec3(-0.6, 0.3, 0.1), 
-                                                    vec3(-0.9, 0.3, 0.9), 0.1), 
-                                                    closestPointDistance);
+                                                    vec3(-0.9, 0.3, 0.9), 0.1), matID);
+        closestPointDistance = unionSDF(rightLowerArm, closestPointDistance);
 
 
-        // Upper left arm
-        closestPointDistance = unionSDF(sdfCapsule(queryPos - vec3(0.8, 0.0, 0.2), 
+        // Left Upper arm
+        matID = 1.0;
+        vec2 leftUpperArm = vec2(sdfCapsule(queryPos - vec3(0.8, 0.0, 0.2), 
                                                     vec3(-0.4, 0.3, 0.3), 
-                                                    vec3(0.6, 0.2, -0.4), 0.1), 
-                                                    closestPointDistance);
+                                                    vec3(0.6, 0.2, -0.4), 0.1), matID);
+        closestPointDistance = unionSDF(leftUpperArm, closestPointDistance);
 
-        // Lower left arm
-        closestPointDistance = unionSDF(sdfCapsule(queryPos - vec3(0.8, -0.6, 0.2), 
+        // Left lower arm
+        matID = 1.0;
+        vec2 leftLowerArm = vec2(sdfCapsule(queryPos - vec3(0.8, -0.6, 0.2), 
                                                 vec3(0.4, 0.0, 0.5), 
-                                                  vec3(0.6, 0.8, -0.4), 0.1), 
-                                                  closestPointDistance);
+                                                  vec3(0.6, 0.8, -0.4), 0.1), matID);
+        closestPointDistance = unionSDF(leftLowerArm, closestPointDistance);
 
 
         // Add right upper leg
-        closestPointDistance = unionSDF(sdfCapsule(queryPos - vec3(-0.8, -1.4, -0.4), 
+        matID = 1.0;
+        vec2 rightUpperLeg = vec2(sdfCapsule(queryPos - vec3(-0.8, -1.4, -0.4), 
                                                     vec3(0.2, 0.4, 0.1), 
-                                                    vec3(0.6, 1.0, -0.2), 0.1), 
-                                                    closestPointDistance);
+                                                    vec3(0.6, 1.0, -0.2), 0.1), matID);
+        //closestPointDistance = unionSDF(rightUpperLeg, closestPointDistance);
 
         // Add right lower leg
-        float rightLowerLeg = sdfCapsule(queryPos - vec3(-0.8, -1.4, -0.4), 
+        matID = 1.0;
+        vec2 rightLowerLeg = vec2(sdfCapsule(queryPos - vec3(-0.8, -1.4, -0.4), 
                                                     vec3(0.2, 0.4, 0.1), 
-                                                    vec3(0.38, -0.2, -0.1), 0.1);
+                                                    vec3(0.38, -0.2, -0.1), 0.1), matID);
 
 
         // Add left upper leg
-        closestPointDistance = unionSDF(sdfCapsule(queryPos - vec3(-0.4, -1.6, 0.1), 
+        matID = 1.0;
+        vec2 leftUpperLeg = vec2(sdfCapsule(queryPos - vec3(-0.4, -1.6, 0.1), 
                                                     vec3(0.8, 0.7, -0.4), 
-                                                    vec3(0.6, 1.0, 0.0), 0.1), 
-                                                    closestPointDistance);
+                                                    vec3(0.6, 1.0, 0.0), 0.1), matID);
+        closestPointDistance = unionSDF(leftUpperLeg, closestPointDistance);
 
         // Add left lower leg
-        float leftLowerLeg = sdfCapsule(queryPos - vec3(-0.4, -1.6, 0.1), 
+        matID = 1.0;
+        vec2 leftLowerLeg = vec2(sdfCapsule(queryPos - vec3(-0.4, -1.6, 0.1), 
                                                     vec3(0.8, 0.7, -0.4), 
-                                                    vec3(1.2, 0.85, -0.9), 0.1);
+                                                    vec3(1.2, 0.85, -0.9), 0.1), matID);
 
 
         // Right wheel
@@ -251,16 +274,18 @@ float sceneSDF(vec3 queryPos)
         float rightWheel = sdfTorus(rightWheelPos, 0.18, 0.07);
 
         // Smooth blend the lower leg and the foot/wheel
-        float rightLegAndWheel = smin(rightLowerLeg, rightWheel, 0.1);
+        matID = 1.0;
+        vec2 rightLegAndWheel = vec2(smin(rightLowerLeg.x, rightWheel, 0.1), matID);
 
-        closestPointDistance = unionSDF(rightLegAndWheel, closestPointDistance);
+        //closestPointDistance = unionSDF(rightLegAndWheel, closestPointDistance);
 
         // Left wheel
         vec3 leftWheelPos = rotateAboutY(queryPos - vec3(0.9, -0.7, -0.9), -PI / 4.0);
         float leftWheel = sdfTorus(leftWheelPos, 0.18, 0.07);
 
         // Smooth blend the lower leg and the foot/wheel
-        float leftLegAndWheel = smin(leftLowerLeg, leftWheel, 0.1);
+        matID = 1.0;
+        vec2 leftLegAndWheel = vec2(smin(leftLowerLeg.x, leftWheel, 0.1), matID);
 
         closestPointDistance = unionSDF(leftLegAndWheel, closestPointDistance);
 
@@ -269,14 +294,16 @@ float sceneSDF(vec3 queryPos)
         antennaPos = rotateAboutX(antennaPos, cos(u_Time * 0.4) / 10.0 + 0.1);
         antennaPos = rotateAboutZ(antennaPos, cos(u_Time * 0.4) / 10.0 + 0.1);
         antennaPos += vec3(0.0, 1.3, 0.4);
-        closestPointDistance = unionSDF(sdfSphere(queryPos, antennaPos, 0.1), closestPointDistance);
 
-        // Add antenna
-        closestPointDistance = unionSDF(sdfCapsule(queryPos, 
-                                                    vec3(0.0, 1.8, 0.5), 
-                                                    antennaPos, 0.01), 
-                                                    closestPointDistance);
+        matID = 1.0;
+        vec2 antennaBall = vec2(sdfSphere(queryPos, antennaPos, 0.1), matID);
+        closestPointDistance = unionSDF(antennaBall, closestPointDistance);
 
+        // Add antenna wire
+        matID = 1.0;
+        vec2 antennaWire = vec2(sdfCapsule(queryPos, vec3(0.0, 1.8, 0.5), antennaPos, 0.01), matID);
+        closestPointDistance = unionSDF(antennaWire, closestPointDistance);
+        
     }
 
     return closestPointDistance;
@@ -334,9 +361,9 @@ Ray getRay(vec2 uv)
 vec3 estimateNormal(vec3 p)
 {
     vec3 normal = vec3(0.0, 0.0, 0.0);
-    normal[0] = sceneSDF(vec3(p.x + EPSILON, p.y, p.z)) - sceneSDF(vec3(p.x - EPSILON, p.y, p.z));
-    normal[1] = sceneSDF(vec3(p.x, p.y + EPSILON, p.z)) - sceneSDF(vec3(p.x, p.y - EPSILON, p.z));
-    normal[2] = sceneSDF(vec3(p.x, p.y, p.z + EPSILON)) - sceneSDF(vec3(p.x, p.y, p.z - EPSILON));
+    normal[0] = sceneSDF(vec3(p.x + EPSILON, p.y, p.z)).x - sceneSDF(vec3(p.x - EPSILON, p.y, p.z)).x;
+    normal[1] = sceneSDF(vec3(p.x, p.y + EPSILON, p.z)).x - sceneSDF(vec3(p.x, p.y - EPSILON, p.z)).x;
+    normal[2] = sceneSDF(vec3(p.x, p.y, p.z + EPSILON)).x - sceneSDF(vec3(p.x, p.y, p.z - EPSILON)).x;
 
     return normalize(normal);
 }
@@ -346,7 +373,7 @@ float hardShadow(vec3 rayOrigin, vec3 rayDirection, float minT, float maxT)
 {
     for(float t = minT; t < maxT; )
     {
-        float h = sceneSDF(rayOrigin + rayDirection * t);
+        float h = sceneSDF(rayOrigin + rayDirection * t).x;
         if(h < EPSILON)
         {
             return 0.0;
@@ -363,7 +390,7 @@ float softShadow(vec3 rayOrigin, vec3 rayDirection, float minT, float maxT, floa
     float result = 1.0;
     for(float t = minT; t < maxT; )
     {
-        float h = sceneSDF(rayOrigin + rayDirection * t);
+        float h = sceneSDF(rayOrigin + rayDirection * t).x;
         if(h < EPSILON)
         {
             return 0.0;
@@ -389,7 +416,9 @@ Intersection getRaymarchedIntersection(vec2 uv)
         
         vec3 queryPoint = r.origin + r.direction * distancet;
         
-        float currentDistance = sceneSDF(queryPoint);
+        vec2 sceneAtPoint = sceneSDF(queryPoint);
+
+        float currentDistance = sceneAtPoint.x;
         if(currentDistance < EPSILON)
         {
             // We hit something
@@ -398,6 +427,8 @@ Intersection getRaymarchedIntersection(vec2 uv)
             intersection.normal = estimateNormal(queryPoint);
 
             intersection.position = queryPoint;
+
+            intersection.material_id = int(sceneAtPoint.y);
             
             return intersection;
         }
@@ -420,8 +451,13 @@ vec3 getSceneColor(vec2 uv)
     { 
         //return intersection.normal;
 
-        // Material base color
-        vec3 diffuseColor = vec3(1.0, 0.4, 0.4);
+        // diffuseColor = Albedo: below is the default value;
+        vec3 diffuseColor = vec3(0.5, 0.5, 0.5);
+
+        if(intersection.material_id == 1)
+        {
+            diffuseColor = vec3(1.0, 0.4, 0.4);
+        }
 
         // Lambert shading
         // Calculate the diffuse term
