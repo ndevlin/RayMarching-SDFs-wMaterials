@@ -451,12 +451,15 @@ vec3 getSceneColor(vec2 uv)
     { 
         //return intersection.normal;
 
+        bool blinnPhong = false;
+
         // diffuseColor = Albedo: below is the default value;
         vec3 diffuseColor = vec3(1.0, 1.0, 1.0);
 
         if(intersection.material_id == 1)
         {
             diffuseColor = vec3(1.0, 0.4, 0.4);
+            blinnPhong = true;
         }
 
         if(intersection.material_id == 2)
@@ -477,13 +480,26 @@ vec3 getSceneColor(vec2 uv)
 
         float lightIntensity = diffuseTerm;  
 
-        // Compute lambert color
-        vec3 lambertColor = diffuseColor * lightIntensity;
+        
+        if(blinnPhong)
+        {
+            vec3 viewVec = u_Eye - intersection.position;
+            vec3 posToLight = LIGHT_DIR - intersection.position;
+            vec3 H = (viewVec + posToLight) / (length(viewVec) + length(posToLight));
+            float intensity = 10.0f;
+            float sharpness = 50.0f;
+            float specularIntensity = intensity * max(pow(dot(H, intersection.normal), sharpness), 0.0f);
+            lightIntensity += specularIntensity;
+
+        }
+
+        // Compute final color
+        vec3 finalColor = diffuseColor * lightIntensity;
 
         // Compute shadow
         float shadowFactor = softShadow(intersection.position, normalize(LIGHT_DIR), EPSILON * 1000.0, 100.0, 20.0);
         
-        vec3 colorMinusShadowing = (shadowFactor + AMBIENT) * lambertColor;
+        vec3 colorMinusShadowing = (shadowFactor + AMBIENT) * finalColor;
 
         return colorMinusShadowing;
 
