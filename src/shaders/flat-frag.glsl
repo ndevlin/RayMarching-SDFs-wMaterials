@@ -194,7 +194,7 @@ vec2 sceneSDF(vec3 queryPos)
         closestPointDistance = unionSDF(cube, closestPointDistance);
         
         // Add head
-        matID = 1.0;
+        matID = 3.0;
         vec2 head = vec2(sdfSphere(queryPos, vec3(0.0, 1.3, 0.3), 0.6), matID);
         closestPointDistance = unionSDF(head, closestPointDistance);
 
@@ -274,7 +274,7 @@ vec2 sceneSDF(vec3 queryPos)
         float rightWheel = sdfTorus(rightWheelPos, 0.18, 0.07);
 
         // Smooth blend the lower leg and the foot/wheel
-        matID = 1.0;
+        matID = 2.0;
         vec2 rightLegAndWheel = vec2(smin(rightLowerLeg.x, rightWheel, 0.1), matID);
 
         closestPointDistance = unionSDF(rightLegAndWheel, closestPointDistance);
@@ -284,7 +284,7 @@ vec2 sceneSDF(vec3 queryPos)
         float leftWheel = sdfTorus(leftWheelPos, 0.18, 0.07);
 
         // Smooth blend the lower leg and the foot/wheel
-        matID = 1.0;
+        matID = 2.0;
         vec2 leftLegAndWheel = vec2(smin(leftLowerLeg.x, leftWheel, 0.1), matID);
 
         closestPointDistance = unionSDF(leftLegAndWheel, closestPointDistance);
@@ -452,11 +452,21 @@ vec3 getSceneColor(vec2 uv)
         //return intersection.normal;
 
         // diffuseColor = Albedo: below is the default value;
-        vec3 diffuseColor = vec3(0.5, 0.5, 0.5);
+        vec3 diffuseColor = vec3(1.0, 1.0, 1.0);
 
         if(intersection.material_id == 1)
         {
             diffuseColor = vec3(1.0, 0.4, 0.4);
+        }
+
+        if(intersection.material_id == 2)
+        {
+            diffuseColor = vec3(0.0, 0.4, 0.9);
+        }
+
+        if(intersection.material_id == 3)
+        {
+            diffuseColor = vec3(0.0, 0.9, 0.9);
         }
 
         // Lambert shading
