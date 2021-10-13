@@ -304,37 +304,32 @@ vec2 sceneSDF(vec3 queryPos)
         vec2 antennaWire = vec2(sdfCapsule(queryPos, vec3(0.0, 1.8, 0.5), antennaPos, 0.01), matID);
         closestPointDistance = unionSDF(antennaWire, closestPointDistance);
         
+        // Spheres at joints
+        matID = 2.0; // Rubber
+        vec2 ballJoint1 = vec2(sdfSphere(queryPos, vec3(0.4, 0.3, 0.5), 0.15), matID);
+        closestPointDistance = unionSDF(ballJoint1, closestPointDistance);
+
+        vec2 ballJoint2 = vec2(sdfSphere(queryPos, vec3(-0.6, 0.4, -0.2), 0.15), matID);
+        closestPointDistance = unionSDF(ballJoint2, closestPointDistance);
+
+        vec2 ballJoint3 = vec2(sdfSphere(queryPos, vec3(-0.6, -1.0, -0.3), 0.15), matID);
+        closestPointDistance = unionSDF(ballJoint3, closestPointDistance);
+
+        vec2 ballJoint4 = vec2(sdfSphere(queryPos, vec3(0.4, -0.9, -0.3), 0.15), matID);
+        closestPointDistance = unionSDF(ballJoint4, closestPointDistance);
+
+        vec2 ballJoint5 = vec2(sdfSphere(queryPos, vec3(1.35, 0.15, -0.05), 0.17), matID);
+        closestPointDistance = unionSDF(ballJoint5, closestPointDistance);
+
+        vec2 ballJoint6 = vec2(sdfSphere(queryPos, vec3(-1.3, -0.05, -0.3), 0.15), matID);
+        closestPointDistance = unionSDF(ballJoint6, closestPointDistance);
     }
 
     return closestPointDistance;
-
-    /*
-    return smin(sdfSphere(queryPos, vec3(0.0, 0.0, 0.0), 0.2),
-                sdfSphere(queryPos, vec3(cos(u_Time / 100.0) * 2.0, 0.0, 0.0), 0.2), 0.2);//abs(cos(u_Time / 100.0))), 0.2);
-    */
 }
 
 Ray getRay(vec2 uv)
-{    
-    // Rachel's implemenation
-    /*
-    Ray r;
-
-    vec3 look = normalize(ORIGIN - EYE);
-    vec3 camera_RIGHT = normalize(cross(forward, WORLD_UP));
-    vec3 camera_UP = cross(camera_RIGHT, look);
-    
-    float aspect_ratio = u_Dimensions.x / u_Dimensions.y;
-    vec3 screen_vertical = camera_UP * tan(FOV); 
-    vec3 screen_horizontal = camera_RIGHT * aspect_ratio * tan(FOV);
-    vec3 screen_point = (look + uv.x * screen_horizontal + uv.y * screen_vertical);
-    
-    r.origin = EYE;
-    r.direction = normalize(screen_point - EYE);
-
-    return r;
-    */
-
+{   
     Ray r;
 
     vec3 forward = u_Ref - u_Eye;
@@ -464,7 +459,7 @@ vec3 getSceneColor(vec2 uv)
 
         if(intersection.material_id == 2)
         {
-            diffuseColor = vec3(0.0471, 0.0353, 0.0667);
+            diffuseColor = vec3(0.1647, 0.1529, 0.1373);
         }
 
         if(intersection.material_id == 3)
