@@ -26,10 +26,10 @@ const vec3 WORLD_FORWARD = vec3(0.0, 0.0, 1.0);
 
 
 const vec3 LIGHT1_DIR = vec3(-1.0, 1.0, 2.0);
-float light1_OutputIntensity = 1.0;
+float light1_OutputIntensity = 0.9;
 vec3 light1_Color = vec3(1.0, 1.0, 1.0); // Full Daylight
 
-const vec3 LIGHT2_DIR = vec3(1.0, 0.0, 0.0);
+const vec3 LIGHT2_DIR = vec3(1.0, 0.5, 0.0);
 float light2_OutputIntensity = 0.3;
 vec3 light2_Color = vec3(0.996, 0.879, 0.804); // 5000 Kelvin Tungsten light
 
@@ -195,8 +195,8 @@ vec2 sceneSDF(vec3 queryPos)
     vec2 floor = vec2(heightField(queryPos, -2.1), matID);
     closestPointDistance = unionSDF(floor, closestPointDistance);
 
-    // Bounding box to improve performance
-    if(sdfBox(queryPos, vec3(5.0, 5.0, 5.0) ) < closestPointDistance.x)
+    // Bounding sphere to improve performance
+    if(sdfSphere(queryPos, vec3(0.0, 0.0, 0.0), 2.0) < closestPointDistance.x)
     {
         // Add body
         vec3 bodyPos = rotateXYZ(queryPos, PI / 10.0,  PI / 4.0, 0.0);
@@ -539,8 +539,18 @@ vec3 getSceneColor(vec2 uv)
         }
 
         // Compute shadow from light1
-        float shadowFactor = softShadow(intersection.position, normalize(LIGHT1_DIR), EPSILON * 1000.0, 100.0, 20.0);
+        float shadowFactor = hardShadow(intersection.position, normalize(LIGHT1_DIR), EPSILON * 1000.0, 100.0);
         light1Intensity *= shadowFactor;
+
+
+        // Compute shadow from light2
+        shadowFactor = softShadow(intersection.position, normalize(LIGHT2_DIR), EPSILON * 1000.0, 100.0, 20.0);
+        light2Intensity *= shadowFactor;
+
+        // Compute shadow from light3
+        shadowFactor = softShadow(intersection.position, normalize(LIGHT3_DIR), EPSILON * 1000.0, 100.0, 20.0);
+        light3Intensity *= shadowFactor;
+
 
         light1_Color *= light1Intensity;
 
