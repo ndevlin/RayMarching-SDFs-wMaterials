@@ -243,16 +243,16 @@ vec2 sceneSDF(vec3 queryPos)
 
         // Add right upper leg
         matID = 1.0;
-        vec2 rightUpperLeg = vec2(sdfCapsule(queryPos - vec3(-0.8, -1.4, -0.4), 
+        vec2 rightUpperLeg = vec2(sdfCapsule(queryPos - vec3(-0.8, -1.6, -0.4), 
                                                     vec3(0.2, 0.4, 0.1), 
                                                     vec3(0.6, 1.0, -0.2), 0.1), matID);
-        //closestPointDistance = unionSDF(rightUpperLeg, closestPointDistance);
+        closestPointDistance = unionSDF(rightUpperLeg, closestPointDistance);
 
         // Add right lower leg
         matID = 1.0;
-        vec2 rightLowerLeg = vec2(sdfCapsule(queryPos - vec3(-0.8, -1.4, -0.4), 
+        vec2 rightLowerLeg = vec2(sdfCapsule(queryPos - vec3(-0.8, -1.6, -0.4), 
                                                     vec3(0.2, 0.4, 0.1), 
-                                                    vec3(0.38, -0.2, -0.1), 0.1), matID);
+                                                    vec3(0.38, -0.0, -0.1), 0.1), matID);
 
 
         // Add left upper leg
@@ -277,7 +277,7 @@ vec2 sceneSDF(vec3 queryPos)
         matID = 1.0;
         vec2 rightLegAndWheel = vec2(smin(rightLowerLeg.x, rightWheel, 0.1), matID);
 
-        //closestPointDistance = unionSDF(rightLegAndWheel, closestPointDistance);
+        closestPointDistance = unionSDF(rightLegAndWheel, closestPointDistance);
 
         // Left wheel
         vec3 leftWheelPos = rotateAboutY(queryPos - vec3(0.9, -0.7, -0.9), -PI / 4.0);
